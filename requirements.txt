@@ -1,0 +1,6 @@
+pandas
+torch
+dgl
+networkx
+notebook
+torch-geometric

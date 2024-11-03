@@ -1,0 +1,12 @@
+# Ignore system and hidden files
+.DS_Store
+*.log
+.anaconda/
+.ipynb_checkpoints/
+AppData/
+*.tmp
+*.ini
+*.csv
+*.xlsx
+*.pdf
+data/raw/studentVle.csv
