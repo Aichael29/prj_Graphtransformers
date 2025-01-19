@@ -1,45 +1,49 @@
 import torch
-from torch.optim.lr_scheduler import StepLR
-from model import GNN
-from data_processing import load_data, create_graph
+from torch.optim import Adam
+from torch.nn.functional import cross_entropy
+from sklearn.model_selection import train_test_split
+import dgl
+from model import GraphTransformerModel  # Assurez-vous que le modèle est dans un fichier model.py
+from data_processing import preprocess_data  # Fonction pour charger et prétraiter les données
 
-def train_gnn():
-    data = load_data()
-    G = create_graph(data)
-    edge_index = torch.tensor([(u, v) for u, v in G.edges()], dtype=torch.long).t().contiguous()
-    x = torch.randn(G.number_of_nodes(), 64)  # Node features can be improved based on the graph
+def train_model(graph, model, epochs=50, lr=0.001):
+    optimizer = Adam(model.parameters(), lr=lr)
+    
+    # Correctement formater edge_index
+    edge_index = torch.stack(graph.edges(etype='registered_in'), dim=0)
+    print(f"edge_index shape: {edge_index.shape}")  # Debugging
+    
+    x = graph.nodes['student'].data['features']
+    y = torch.randint(0, 2, (x.shape[0],))  # Exemple de labels aléatoires
+    
+    train_idx, val_idx = train_test_split(torch.arange(x.size(0)), test_size=0.2, random_state=42)
 
-    graph_data = Data(x=x, edge_index=edge_index)
-    model = GNN(in_dim=64, hidden_dim=128, out_dim=2)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.005, weight_decay=1e-4)
-    scheduler = StepLR(optimizer, step_size=20, gamma=0.5)
-    loss_fn = torch.nn.CrossEntropyLoss()
-
-    # Early stopping
-    best_loss = float('inf')
-    patience, patience_counter = 10, 0
-
-    y = torch.randint(0, 2, (G.number_of_nodes(),))  # Replace with actual labels
-
-    for epoch in range(100):
+    for epoch in range(epochs):
         model.train()
         optimizer.zero_grad()
-        out = model(graph_data.x, graph_data.edge_index)
-        loss = loss_fn(out, y)
+        out = model(x, edge_index)
+        loss = cross_entropy(out[train_idx], y[train_idx])
         loss.backward()
         optimizer.step()
-        scheduler.step()
+        print(f"Epoch {epoch+1}/{epochs}, Loss: {loss.item():.4f}")
 
-        if epoch % 10 == 0:
-            print(f'Epoch {epoch}, Loss: {loss.item()}')
-        if loss < best_loss:
-            best_loss = loss
-            patience_counter = 0
-        else:
-            patience_counter += 1
-        if patience_counter >= patience:
-            print("Early stopping triggered.")
-            break
+    return model
+
 
 if __name__ == "__main__":
-    train_gnn()
+  
+
+    print("Loading and preprocessing data...")
+    graph = preprocess_data()
+    dgl.save_graphs('data/processed/oulad_graph_with_features.bin', [graph])
+    print(graph.edges(etype='registered_in'))
+    print("Initializing model...")
+    input_dim = graph.nodes['student'].data['features'].shape[1]
+    hidden_dim = 128
+    output_dim = 2  # Tâche binaire
+    model = GraphTransformerModel(input_dim, hidden_dim, output_dim)
+
+    print("Training model...")
+    trained_model = train_model(graph, model, epochs=50)
+    torch.save(trained_model.state_dict(), 'graph_transformer.pth')
+    print("Model saved ")
