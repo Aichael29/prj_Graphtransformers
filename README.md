@@ -53,7 +53,7 @@ To set up this project locally, follow these steps:
 1. **Clone the Repository**
    ```bash
    git clone <repository-url>
-   cd GraphTransformers
+   cd prj_Graphtransformers
    ```
 
 2. **Set Up Virtual Environment**
