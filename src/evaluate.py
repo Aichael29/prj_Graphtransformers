@@ -1,35 +1,44 @@
 import torch
-from model import GNN, GraphTransformer
-from data_processing import load_data
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
+from sklearn.model_selection import train_test_split
+import dgl
+from model import GraphTransformerModel  # Assurez-vous que le modèle est dans un fichier model.py
+from data_processing import preprocess_data  # Fonction pour charger et prétraiter les données
 
-def evaluate(model, data):
+def evaluate_model(graph, model):
+    """
+    Évalue les performances du modèle sur l'ensemble de test.
+    """
     model.eval()
+    edge_index = torch.stack(graph.edges(etype='registered_in'), dim=0)
+    x = graph.nodes['student'].data['features']
+    y = torch.randint(0, 2, (x.shape[0],))  # Exemple de labels aléatoires (à remplacer par vos vrais labels)
+    _, test_idx = train_test_split(torch.arange(x.size(0)), test_size=0.2, random_state=42)
+
     with torch.no_grad():
-        logits = model(data.x, data.edge_index)
-        pred = logits.argmax(dim=1)
-        accuracy = accuracy_score(data.y.cpu(), pred.cpu())
-        f1 = f1_score(data.y.cpu(), pred.cpu(), average="weighted")
-        cm = confusion_matrix(data.y.cpu(), pred.cpu())
-        return accuracy, f1, cm
+        out = model(x, edge_index)
+        predictions = out[test_idx].argmax(dim=1).cpu().numpy()
+        labels = y[test_idx].cpu().numpy()
 
-# Load data
-data = load_data()
+        acc = accuracy_score(labels, predictions)
+        f1 = f1_score(labels, predictions, average='weighted')
+        conf_matrix = confusion_matrix(labels, predictions)
 
-# Model parameters
-in_dim = data.x.size(1)
-hidden_dim = 64
-out_dim = 2
-num_heads = 4
+        print(f"Accuracy: {acc:.4f}")
+        print(f"F1-Score: {f1:.4f}")
+        print("Confusion Matrix:")
+        print(conf_matrix)
 
-# Initialize models
-gnn_model = GNN(in_dim, hidden_dim, out_dim)
-gt_model = GraphTransformer(in_dim, hidden_dim, out_dim, num_heads)
+    return acc, f1, conf_matrix
 
-# Evaluate models
-gnn_accuracy, gnn_f1, gnn_cm = evaluate(gnn_model, data)
-gt_accuracy, gt_f1, gt_cm = evaluate(gt_model, data)
+if __name__ == "__main__":
+    print("Loading and preprocessing data...")
+    graph = preprocess_data()
+    model = GraphTransformerModel(input_dim=graph.nodes['student'].data['features'].shape[1],
+                                   hidden_dim=128,
+                                   output_dim=2)
 
-# Display results
-print(f"GNN - Accuracy: {gnn_accuracy}, F1: {gnn_f1}\nConfusion Matrix:\n{gnn_cm}")
-print(f"Graph Transformer - Accuracy: {gt_accuracy}, F1: {gt_f1}\nConfusion Matrix:\n{gt_cm}")
+    print("Loading model...")
+    model.load_state_dict(torch.load('graph_transformer.pth'))
+    print("Evaluating model...")
+    evaluate_model(graph, model)
