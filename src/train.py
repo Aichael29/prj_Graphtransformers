@@ -44,6 +44,6 @@ if __name__ == "__main__":
     model = GraphTransformerModel(input_dim, hidden_dim, output_dim)
 
     print("Training model...")
-    trained_model = train_model(graph, model, epochs=50)
+    trained_model = train_model(graph, model, epochs=100)
     torch.save(trained_model.state_dict(), 'graph_transformer.pth')
     print("Model saved ")
