@@ -136,29 +136,3 @@ To install these dependencies, run:
 pip install -r requirements.txt
 ```
 
-## Contributing
-
-To contribute to this project, follow these steps:
-
-1. **Fork** the repository and create a new branch.
-2. Make your changes and ensure they are well-documented.
-3. Commit your changes with clear, descriptive messages. Follow these conventions:
-   - `feat`: Adding new features
-   - `fix`: Fixing a bug
-   - `docs`: Updating documentation
-   - `style`: Code formatting (no functional changes)
-   - `refactor`: Code restructuring (no functional changes)
-   - `test`: Adding or updating tests
-
-4. **Push** your changes and create a pull request.
-
-### Example Commit Messages
-
-- `feat: Add data loading and preprocessing function in data_processing.py`
-- `fix: Resolve memory issue in load_data function`
-- `docs: Update README with setup instructions`
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-# test
