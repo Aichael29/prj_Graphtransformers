@@ -2,6 +2,7 @@ import pandas as pd
 import dgl
 import torch
 import time
+import numpy as np
 
 def load_data():
     """
@@ -9,16 +10,29 @@ def load_data():
     """
     print("Loading data...")
     start_time = time.time()
-    assessments = pd.read_csv('data/raw/assessments.csv')
-    courses = pd.read_csv('data/raw/courses.csv')
-    student_assessments = pd.read_csv('data/raw/studentAssessment.csv')
-    student_info = pd.read_csv('data/raw/studentInfo.csv')
-    student_registration = pd.read_csv('data/raw/studentRegistration.csv')
-    student_vle = pd.read_csv('data/raw/studentVle.csv')
-    vle = pd.read_csv('data/raw/vle.csv')
+    assessments = pd.read_csv('C:/Users/suman/OneDrive/Bureau/Case_Study/prj_Graphtransformers/prj_Graphtransformers/data/raw/assessments.csv')
+    courses = pd.read_csv('C:/Users/suman/OneDrive/Bureau/Case_Study/prj_Graphtransformers/prj_Graphtransformers/data/raw/courses.csv')
+    student_assessments = pd.read_csv('C:/Users/suman/OneDrive/Bureau/Case_Study/prj_Graphtransformers/prj_Graphtransformers/data/raw/studentAssessment.csv')
+    student_info = pd.read_csv('C:/Users/suman/OneDrive/Bureau/Case_Study/prj_Graphtransformers/prj_Graphtransformers/data/raw/studentInfo.csv')
+    student_registration = pd.read_csv('C:/Users/suman/OneDrive/Bureau/Case_Study/prj_Graphtransformers/prj_Graphtransformers/data/raw/studentRegistration.csv')
+    student_vle = pd.read_csv('C:/Users/suman/OneDrive/Bureau/Case_Study/prj_Graphtransformers/prj_Graphtransformers/data/raw/studentVle.csv')
+    vle = pd.read_csv('C:/Users/suman/OneDrive/Bureau/Case_Study/prj_Graphtransformers/prj_Graphtransformers/data/raw/vle.csv')
+    
     print(f"Data loaded in {time.time() - start_time:.2f} seconds.")
     return assessments, courses, student_assessments, student_info, student_registration, student_vle, vle
 
+def compute_temporal_encoding(dates, d_hidden):
+    """
+    Compute relative positional encoding using sinusoidal functions.
+    """
+    print(f"Computing Temporal Encoding with {d_hidden} dimensions...")
+    encodings = np.zeros((len(dates), d_hidden))
+    for i in range(0, d_hidden, 2):
+        encodings[:, i] = np.sin(dates / (10000 ** (2 * i / d_hidden)))
+        encodings[:, i + 1] = np.cos(dates / (10000 ** (2 * i / d_hidden)))
+        
+    print(f"Temporal Encoding Computed for {len(dates)} entries.")
+    return torch.tensor(encodings, dtype=torch.float32)
 
 def preprocess_data():
     """
@@ -28,6 +42,15 @@ def preprocess_data():
 
     print("Cleaning and converting data...")
     # Ensure numeric IDs for all necessary columns
+    # Ensure numeric IDs and date normalization
+    print("Normalizing student_vle dates for RTE computation...")
+    student_vle['date'] = student_vle['date'].astype(float)
+    student_vle['date'] = (student_vle['date'] - student_vle['date'].min()) / (student_vle['date'].max() - student_vle['date'].min())
+
+    print("Computing Temporal Encoding...")
+    temporal_encoding_dim = 16  # Set embedding dimension for RTE
+    temporal_encodings = compute_temporal_encoding(student_vle['date'].values, temporal_encoding_dim)
+
     student_info['id_student'] = student_info['id_student'].astype(int)
     student_assessments['id_student'] = student_assessments['id_student'].astype(int)
     student_assessments['id_assessment'] = student_assessments['id_assessment'].astype(int)
@@ -135,7 +158,7 @@ def preprocess_data():
     return graph
 
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     start_time = time.time()
     try:
         graph = preprocess_data()
@@ -143,3 +166,4 @@ if __name__ == "__main__":
         print(f"Graph saved successfully in {time.time() - start_time:.2f} seconds!")
     except Exception as e:
         print(f"Error: {e}")
+
